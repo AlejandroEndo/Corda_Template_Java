@@ -22,6 +22,12 @@ public class IOUFlow extends FlowLogic<Void> {
     // The progress tracker provides checkpoints indicating the progress of the flow to observers.
     private final ProgressTracker progressTracker = new ProgressTracker();
 
+    // We retrieve the notary identity from the network map.
+    Party notary = getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0);
+
+    // We create the transaction components.
+    IOUState outputState = new IOUState(iouValue, getOurIdentity(), otherParty);
+
     public IOUFlow(Integer iouValue, Party otherParty) {
         this.iouValue = iouValue;
         this.otherParty = otherParty;
@@ -41,11 +47,11 @@ public class IOUFlow extends FlowLogic<Void> {
 
         // We create the transaction components.
         IOUState outputState = new IOUState(iouValue, getOurIdentity(), otherParty);
-        Command command = new Command<>(new TemplateContract.Commands.Action(), getOurIdentity().getOwningKey());
+        Command command = new Command<>(new IOUContract.Commands.Action(), getOurIdentity().getOwningKey());
 
         // We create a transaction builder and add the components.
         TransactionBuilder txBuilder = new TransactionBuilder(notary)
-                .addOutputState(outputState, TemplateContract.ID)
+                .addOutputState(outputState, IOUContract.ID)
                 .addCommand(command);
 
         // Signing the transaction.
