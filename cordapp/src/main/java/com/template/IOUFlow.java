@@ -2,11 +2,10 @@ package com.template;
 
 import co.paralleluniverse.fibers.Suspendable;
 import net.corda.core.contracts.Command;
-import net.corda.core.flows.FlowException;
-import net.corda.core.flows.FlowLogic;
-import net.corda.core.flows.InitiatingFlow;
-import net.corda.core.flows.StartableByRPC;
+import net.corda.core.flows.*;
 import net.corda.core.identity.Party;
+import net.corda.core.transactions.SignedTransaction;
+import net.corda.core.transactions.TransactionBuilder;
 import net.corda.core.utilities.ProgressTracker;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +22,7 @@ public class IOUFlow extends FlowLogic<Void> {
     // The progress tracker provides checkpoints indicating the progress of the flow to observers.
     private final ProgressTracker progressTracker = new ProgressTracker();
 
-    public IOUFlow(Integer iouValue, Party otherParty){
+    public IOUFlow(Integer iouValue, Party otherParty) {
         this.iouValue = iouValue;
         this.otherParty = otherParty;
     }
@@ -34,6 +33,7 @@ public class IOUFlow extends FlowLogic<Void> {
     }
 
     // The flow logic is encapsulated within the call() method.
+    @Suspendable
     @Override
     public Void call() throws FlowException {
         // We retrieve the notary identity from the network map.
@@ -43,7 +43,17 @@ public class IOUFlow extends FlowLogic<Void> {
         IOUState outputState = new IOUState(iouValue, getOurIdentity(), otherParty);
         Command command = new Command<>(new TemplateContract.Commands.Action(), getOurIdentity().getOwningKey());
 
-        
+        // We create a transaction builder and add the components.
+        TransactionBuilder txBuilder = new TransactionBuilder(notary)
+                .addOutputState(outputState, TemplateContract.ID)
+                .addCommand(command);
+
+        // Signing the transaction.
+        SignedTransaction signedTx = getServiceHub().signInitialTransaction(txBuilder);
+
+        // Finalising the transaction.
+        subFlow(new FinalityFlow(signedTx));
+
         return null;
     }
 }
