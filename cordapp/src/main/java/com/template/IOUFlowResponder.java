@@ -8,7 +8,6 @@ import net.corda.core.flows.FlowSession;
 import net.corda.core.flows.SignTransactionFlow;
 import net.corda.core.transactions.SignedTransaction;
 import net.corda.core.utilities.ProgressTracker;
-import org.jetbrains.annotations.NotNull;
 
 import static net.corda.core.contracts.ContractsDSL.requireThat;
 
